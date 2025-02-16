@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Y-27</title>
+    <link rel="stylesheet" href="checker.css"> 
+</head>
+<body>
+    <div class="container">
+        <div class="text-section">
+            <h1>Y-27</h1>
+            <p>Upload an images of lungs, we will analyze it</p>
+        </div>
+        <div class="upload-container">
+            <form id="uploadForm" enctype="multipart/form-data">
+                <input type="file" id="fileInput" name="file" accept="image/*">
+                <div id="previewContainer"></div>
+                <button type="button" id="uploadButton" class="submit-btn">Analyze Lungs</button>
+            </form>
+            <div id="resultContainer"></div>
+        </div>
+    </div>
+
+    <script>
+        document.getElementById('fileInput').addEventListener('change', function(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = function(e) {
+                    const img = document.createElement('img');
+                    img.src = e.target.result;
+                    img.classList.add('preview');
+                    const previewContainer = document.getElementById('previewContainer');
+                    previewContainer.innerHTML = '';
+                    previewContainer.appendChild(img);
+                };
+                reader.readAsDataURL(file);
+            }
+        });
+
+        document.getElementById('uploadButton').addEventListener('click', function(event) {
+            event.preventDefault();
+
+            const fileInput = document.getElementById('fileInput');
+            const file = fileInput.files[0];
+
+            if (!file) {
+                alert("Please select an image first.");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            fetch('http://127.0.0.1:8000/predict', {  // Ensure correct API URL
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) {
+                    return response.json().then(errorData => {
+                        throw new Error(errorData.detail || response.statusText);
+                    });
+                }
+                return response.json();
+            })
+            .then(data => {
+                document.getElementById('resultContainer').innerHTML = `<p>Predicted Class: ${data.predicted_class}</p>`;
+            })
+            .catch(error => {
+                document.getElementById('resultContainer').innerHTML = `<p style="color: red;">Error: ${error.message}</p>`;
+                console.error("Error:", error);
+            });
+        });
+    </script>
+</body>
+</html>
